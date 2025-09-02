@@ -21,6 +21,7 @@ enum class PROTOCOL {
 struct ServerConfig {
     std::string server_name; // domain or ipv4
     std::string forward_ip; // ipv4
+    int port = 25565;
     PROTOCOL protocol;
 };
 
@@ -28,6 +29,7 @@ struct ServerConfig {
 class Config {
 public:
     Config(const std::string&);
+    int GetPort() {return port;};
 private:
     std::vector<std::unique_ptr<ServerConfig>> servers;
     int port;

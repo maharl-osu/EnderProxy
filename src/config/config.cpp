@@ -1,4 +1,4 @@
-#include <config.hpp>
+#include "config.hpp"
 #include <fstream>
 #include <iostream>
 
@@ -68,6 +68,8 @@ Config::Config(const std::string& path) {
                     }
 
                     got_type = true;
+                } else if (key == "port" && current_config != nullptr) {
+                    current_config->port = std::atoi(value.c_str());
                 } else {
                     std::cout << "Error in config file." << std::endl;
                     throw std::runtime_error("Failed To Parse Config.");
