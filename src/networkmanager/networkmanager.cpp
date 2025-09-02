@@ -213,16 +213,16 @@ void NetworkManager::RemoveConnection(TCPConnection* connection) {
 // NetworkManager Helper Implementation
 void TCPForwardWorker(std::shared_ptr<TCPConnection> src, std::shared_ptr<TCPConnection> dst) {
     const size_t buffer_size = TCP_BUFFER_SIZE;
-    std::unique_ptr<uint8_t> buffer = std::make_unique<uint8_t>(buffer_size);
+    uint8_t buffer[buffer_size];
     ssize_t len;
     
 
     while (src->Status() == TCPStatus::OPEN && dst->Status() == TCPStatus::OPEN) {
         std::cout << "Receiving!" << std::endl;
-        src->Recv(buffer.get(), len, buffer_size);
+        src->Recv(buffer, len, buffer_size);
 
         if (len > 0 && dst->Status() == TCPStatus::OPEN)
-            dst->Send(buffer.get(), len);
+            dst->Send(buffer, len);
     }
 
     std::cout << "Forward Worker Exiting." << std::endl;
