@@ -7,7 +7,8 @@ int main(int argc, char** argv) {
     
     NetworkManager::ListenTCP(25566);
 
-    for(;;) {
+    while (true) {
+        std::cout << "Waiting For Connection" << std::endl;
         auto connection = NetworkManager::AcceptTCP();
 
         std::cout << "Received Connection: " << connection->GetIP() << ":" << connection->GetPort() << std::endl;
@@ -19,7 +20,10 @@ int main(int argc, char** argv) {
 
         NetworkManager::ForwardTCP(src_addr, dst_addr);
         NetworkManager::ForwardTCP(dst_addr, src_addr);
+
+        connection = nullptr;
+        forward_connection = nullptr;
     }
 
-
+    std::cout << "Main Thread Exiting!" << std::endl;
 }

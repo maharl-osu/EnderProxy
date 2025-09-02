@@ -13,7 +13,7 @@ extern "C" {
 #include <memory>
 #include <string>
 
-#define TCP_BUFFER_SIZE 512000
+#define TCP_BUFFER_SIZE 512
 
 enum class TCPStatus {
     SETUP,
@@ -26,8 +26,9 @@ class TCPConnection {
 public:
     TCPConnection(const std::string&); // String Example: "192.168.0.1:25565"
     TCPConnection(const size_t&, const std::string&, const int&); // fd, ip, port
-    void Send(uint8_t*, const ssize_t&) const; // buffer, amt to write
-    void Recv(uint8_t*, size_t&, const size_t&) const; // buffer, num written, buffer size
+    ~TCPConnection();
+    void Send(uint8_t*, const ssize_t&); // buffer, amt to write
+    void Recv(uint8_t*, ssize_t&, const size_t&); // buffer, num written, buffer size
     void Close();
     const int& GetPort() const {return port;};
     const std::string& GetIP() const {return ip;};
@@ -46,6 +47,7 @@ public:
     static std::shared_ptr<TCPConnection> AcceptTCP();
     static std::shared_ptr<TCPConnection> ConnectTCP(std::string);
     static bool ForwardTCP(std::string, std::string);
+    static void RemoveConnection(TCPConnection*);
 private:
     static bool listening;
     static int server_fd;

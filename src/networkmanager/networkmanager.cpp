@@ -1,5 +1,10 @@
 #include "./networkmanager.hpp"
 
+extern "C" {
+    #include <netinet/in.h>
+    #include <netinet/tcp.h>
+}
+
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
@@ -40,12 +45,22 @@ TCPConnection::TCPConnection(const size_t& fd, const std::string& ip, const int&
     status = TCPStatus::OPEN;
 }
 
-void TCPConnection::Send(uint8_t* buffer, const ssize_t& len) const {
+TCPConnection::~TCPConnection() {
+
+    if (status != TCPStatus::CLOSED) {
+        shutdown(fd, SHUT_RDWR);
+        close(fd);
+    }
+
+}
+
+void TCPConnection::Send(uint8_t* buffer, const ssize_t& len) {
 
     ssize_t len_written = write(fd, buffer, len);
 
     if (len_written == -1) {
         std::cout << "Failed To Write To TCP Connection" << std::endl;
+        Close();
     } if (len_written != len) {
         std::cout << "Failed To Write Entire Packet. Trying To Write Remaining." << std::endl;
         Send(buffer + len_written, len - len_written);
@@ -53,8 +68,12 @@ void TCPConnection::Send(uint8_t* buffer, const ssize_t& len) const {
 
 }
 
-void TCPConnection::Recv(uint8_t* recv_buffer, size_t& recv_len, const size_t& buffer_size) const {
-    recv_len = read(fd, recv_buffer, buffer_size);
+void TCPConnection::Recv(uint8_t* recv_buffer, ssize_t& recv_len, const size_t& buffer_size) {
+
+    recv_len = recv(fd, recv_buffer, buffer_size, 0);
+
+    if (recv_len <= 0) // Error or socket is closed
+        Close();
 }
 
 void TCPConnection::Close() {
@@ -62,6 +81,8 @@ void TCPConnection::Close() {
 
     shutdown(fd, SHUT_RDWR);
     close(fd);
+
+    NetworkManager::RemoveConnection(this);
 }
 
 
@@ -171,27 +192,38 @@ bool NetworkManager::ForwardTCP(std::string ip_port_src, std::string ip_port_dst
     }
 
     std::thread t(TCPForwardWorker, src_connection, dst_connection);
-
+    t.detach();
     std::cout << "Thread created!" << std::endl;
 
-    t.detach();
+    
 
     return true;
+}
+
+void NetworkManager::RemoveConnection(TCPConnection* connection) {
+    for (auto begin = tcp_connections.begin(); begin != tcp_connections.end(); ++begin) {
+        if (begin->get() == connection) {
+            tcp_connections.erase(begin);
+            return;
+        }
+    }
 }
 
 
 // NetworkManager Helper Implementation
 void TCPForwardWorker(std::shared_ptr<TCPConnection> src, std::shared_ptr<TCPConnection> dst) {
-
-    std::unique_ptr<uint8_t> buffer = std::make_unique<uint8_t>(TCP_BUFFER_SIZE);
-    size_t len;
+    const size_t buffer_size = TCP_BUFFER_SIZE;
+    std::unique_ptr<uint8_t> buffer = std::make_unique<uint8_t>(buffer_size);
+    ssize_t len;
+    
 
     while (src->Status() == TCPStatus::OPEN && dst->Status() == TCPStatus::OPEN) {
+        std::cout << "Receiving!" << std::endl;
+        src->Recv(buffer.get(), len, buffer_size);
 
-        src->Recv(buffer.get(), len, TCP_BUFFER_SIZE);
-        
-        if (dst->Status() == TCPStatus::OPEN)
+        if (len > 0 && dst->Status() == TCPStatus::OPEN)
             dst->Send(buffer.get(), len);
-
     }
+
+    std::cout << "Forward Worker Exiting." << std::endl;
 }
