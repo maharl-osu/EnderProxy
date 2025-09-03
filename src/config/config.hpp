@@ -30,6 +30,7 @@ class Config {
 public:
     Config(const std::string&);
     int GetPort() {return port;};
+    std::string GetForwardAddress(std::string);
 private:
     std::vector<std::unique_ptr<ServerConfig>> servers;
     int port;

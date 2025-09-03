@@ -18,36 +18,53 @@ int main(int argc, char** argv) {
 
 
     // Open Reverse Proxy Port
-    NetworkManager::ListenTCP(config.GetPort());
+    try {
+        NetworkManager::ListenTCP(config.GetPort());
+    } catch (std::exception e) {
+        std::cout << "Failed To Listen On Port " << config.GetPort() << std::endl;
+        exit(0);
+    }
+    
     std::cout << "Config successfully loaded, reverse proxy listening on port " << config.GetPort() << "." << std::endl;
 
     // Accept Incoming Requests
     while (true) {
         auto connection = NetworkManager::AcceptTCP();
 
-        std::cout << "Received Connection: " << connection->GetIP() << ":" << connection->GetPort() << std::endl;
-
         Packet packet(connection.get());
 
         uint32_t packet_id = packet.ReadVarInt();
         uint32_t protocol = packet.ReadVarInt();
+        std::string server_name = packet.ReadString();
+        std::string forward_address = config.GetForwardAddress(server_name);
 
-        std::cout << "Packet ID: " << packet_id << std::endl;
-        std::cout << "Protocol: " << protocol << std::endl;
+        if (forward_address == "") {
+            std::cout << "Received Connection: " << connection->GetIP() << ":" << connection->GetPort()
+                  << " (Packet ID: " << packet_id << ") (Protocol Version: " << protocol << ")"
+                  << " (Server Name: " << server_name << ") (Forward IP: N/A)"
+                  << std::endl;
 
-        auto forward_connection = NetworkManager::ConnectTCP("192.168.0.216:25565");
+
+            connection->Close();
+            connection = nullptr;
+            continue;
+        }
+
+        std::cout << "Received Connection: " << connection->GetIP() << ":" << connection->GetPort()
+                  << " (Packet ID: " << packet_id << ") (Protocol Version: " << protocol << ")"
+                  << " (Server Name: " << server_name << ") (Forward IP: " << forward_address << ")"
+                  << std::endl;
+
+        auto forward_connection = NetworkManager::ConnectTCP(forward_address);
 
         packet.Forward(forward_connection.get());
         
         std::string src_addr = connection->GetIP() + ":" + std::to_string(connection->GetPort());
-        std::string dst_addr = forward_connection->GetIP() + ":" + std::to_string(forward_connection->GetPort());
-
         
-        NetworkManager::ForwardTCP(src_addr, dst_addr);
-        NetworkManager::ForwardTCP(dst_addr, src_addr);
+        NetworkManager::ForwardTCP(src_addr, forward_address);
+        NetworkManager::ForwardTCP(forward_address, src_addr);
         
         
-
         connection = nullptr;
         forward_connection = nullptr;
     }

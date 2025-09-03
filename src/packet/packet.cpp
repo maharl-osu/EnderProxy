@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <cstring>
 
 #define SEGMENT_BITS 0x7F
 #define CONTINUE_BIT 0x80
@@ -53,6 +54,17 @@ int32_t Packet::ReadVarInt() {
     }
 
     return value;
+}
+
+std::string Packet::ReadString() {
+    int length = ReadVarInt();
+
+    char str[length + 1];
+    std::memcpy(str, raw_packet + offset, length);
+    str[length] = '\0';
+    offset += length;
+
+    return std::string(str);
 }
 
 // Helper Implementations

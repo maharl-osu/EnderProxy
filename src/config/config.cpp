@@ -99,6 +99,18 @@ Config::Config(const std::string& path) {
     this->servers.push_back(std::move(current_config));
 }
 
+std::string Config::GetForwardAddress(std::string server_name) {
+
+    for (auto begin = servers.begin(); begin != servers.end(); ++begin) {
+        if ((*begin)->server_name == server_name) {
+            return (*begin)->forward_ip + ":" + std::to_string((*begin)->port);
+        }
+    }
+
+    std::cout << "Error: Couldn't Find Forward Rule For Host \'" << server_name << "\'" << std::endl;
+    return "";
+}
+
 
 // Helper Implementations
 void StripLine(std::string& line) {

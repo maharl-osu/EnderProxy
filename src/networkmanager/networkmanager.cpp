@@ -125,7 +125,7 @@ void NetworkManager::ListenTCP(int port) {
 
 std::shared_ptr<TCPConnection> NetworkManager::AcceptTCP() {
     if (server_fd == -1) {
-        std::cout << "Can't Accept TCP connections before listening." << std::endl;
+        std::cout << "Can't accept TCP connections before listening." << std::endl;
         return nullptr;
     }
 
