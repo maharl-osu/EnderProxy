@@ -8,7 +8,7 @@ SRCS = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
 OBJDIR = build/obj
 OBJS = $(patsubst src/%.cpp,$(OBJDIR)/%.o,$(SRCS))
 
-TARGET = MCProxy
+TARGET = EnderProxy
 
 all: $(TARGET)
 
