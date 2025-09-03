@@ -3,6 +3,7 @@
 extern "C" {
     #include <netinet/in.h>
     #include <netinet/tcp.h>
+    #include <errno.h>
 }
 
 #include <iostream>
@@ -72,8 +73,10 @@ void TCPConnection::Recv(uint8_t* recv_buffer, ssize_t& recv_len, const size_t& 
 
     recv_len = recv(fd, recv_buffer, buffer_size, 0);
 
-    if (recv_len <= 0) // Error or socket is closed
+    if (recv_len <= 0) { 
         Close();
+    } // Error or socket is closed
+        
 }
 
 void TCPConnection::Close() {
@@ -216,9 +219,7 @@ void TCPForwardWorker(std::shared_ptr<TCPConnection> src, std::shared_ptr<TCPCon
     uint8_t buffer[buffer_size];
     ssize_t len;
     
-
     while (src->Status() == TCPStatus::OPEN && dst->Status() == TCPStatus::OPEN) {
-        std::cout << "Receiving!" << std::endl;
         src->Recv(buffer, len, buffer_size);
 
         if (len > 0 && dst->Status() == TCPStatus::OPEN)
