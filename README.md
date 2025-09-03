@@ -29,7 +29,7 @@ Whether you’re running a small home server or managing a large network, this r
 
 # Example Config
 
-```toml
+```conf
 port = 25565     # Port that the reverse proxy will run on.
 
 [skyblock.example.com]
