@@ -46,7 +46,6 @@ int main(int argc, char** argv) {
 
 
             connection->Close();
-            connection = nullptr;
             continue;
         }
 
@@ -63,10 +62,6 @@ int main(int argc, char** argv) {
         
         NetworkManager::ForwardTCP(src_addr, forward_address);
         NetworkManager::ForwardTCP(forward_address, src_addr);
-        
-        
-        connection = nullptr;
-        forward_connection = nullptr;
     }
 
     std::cout << "Main Thread Exiting!" << std::endl;
