@@ -1,16 +1,28 @@
 #include "./networkmanager/networkmanager.hpp"
 #include "./packet/packet.hpp"
+#include "./config/config.hpp"
 
 #include <iostream>
 #include <memory>
 
 // Main thread and entry point
 int main(int argc, char** argv) {
-    
-    NetworkManager::ListenTCP(25566);
 
+    if (argc < 2) {
+        std::cout << "Please specify a config file to use as an argument." << std::endl;
+        exit(0);
+    }
+
+    // Load Config
+    Config config(argv[1]);
+
+
+    // Open Reverse Proxy Port
+    NetworkManager::ListenTCP(config.GetPort());
+    std::cout << "Config successfully loaded, reverse proxy listening on port " << config.GetPort() << "." << std::endl;
+
+    // Accept Incoming Requests
     while (true) {
-        std::cout << "Waiting For Connection" << std::endl;
         auto connection = NetworkManager::AcceptTCP();
 
         std::cout << "Received Connection: " << connection->GetIP() << ":" << connection->GetPort() << std::endl;

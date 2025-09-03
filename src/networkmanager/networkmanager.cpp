@@ -119,8 +119,6 @@ void NetworkManager::ListenTCP(int port) {
     if (listen(fd, 5) == -1)
         throw std::runtime_error("Failed To Listen on Socket.");
 
-    std::cout << "Listening on Port: " << port << std::endl;
-
     server_fd = fd;
     listening = true;
 }
@@ -196,7 +194,6 @@ bool NetworkManager::ForwardTCP(std::string ip_port_src, std::string ip_port_dst
 
     std::thread t(TCPForwardWorker, src_connection, dst_connection);
     t.detach();
-    std::cout << "Thread created!" << std::endl;
 
     
 
@@ -226,5 +223,4 @@ void TCPForwardWorker(std::shared_ptr<TCPConnection> src, std::shared_ptr<TCPCon
             dst->Send(buffer, len);
     }
 
-    std::cout << "Forward Worker Exiting." << std::endl;
 }

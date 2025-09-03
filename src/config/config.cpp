@@ -32,7 +32,7 @@ Config::Config(const std::string& path) {
 
                 if (!got_ip || !got_type) {
                     std::cout << "Error in config file. Please include both a ip and type for each server." << std::endl;
-                    throw std::runtime_error("Failed To Parse Config.");
+                    exit(0);
                 }
 
                 got_ip = false;
@@ -44,8 +44,6 @@ Config::Config(const std::string& path) {
 
                 current_config = std::make_unique<ServerConfig>();
                 current_config->server_name = line.substr(1, line.length() - 2);
-
-                std::cout << "Server Directory: " << current_config->server_name << std::endl;
 
                 break;
             case LINE_TYPE::PROPERTY:
@@ -64,24 +62,23 @@ Config::Config(const std::string& path) {
                         current_config->protocol = PROTOCOL::BOTH;
                     } else {
                         std::cout << "Error in config file. Failed to parse type: " << value  << std::endl;
-                        throw std::runtime_error("Failed To Parse Config.");
+                        exit(0);
                     }
 
                     got_type = true;
                 } else if (key == "port" && current_config != nullptr) {
                     current_config->port = std::atoi(value.c_str());
                 } else {
-                    std::cout << "Error in config file." << std::endl;
-                    throw std::runtime_error("Failed To Parse Config.");
+                    std::cout << "Error in config file. Invalid property." << std::endl;
+                    exit(0);
                 }
 
-                std::cout << "Set: " << key << " = " << value << std::endl;
                 break;
             case LINE_TYPE::EMPTY:
                 continue;
             case LINE_TYPE::INVALID:
                 std::cout << "Error in config file." << std::endl;
-                throw std::runtime_error("Failed To Parse Config.");
+                exit(0);
                 break;
             default:
                 throw std::runtime_error("Something Went Wrong.");
@@ -91,12 +88,12 @@ Config::Config(const std::string& path) {
 
     if (current_config == nullptr) {
         std::cout << "Error in config file. Please include at least one server." << std::endl;
-        throw std::runtime_error("Failed To Parse Config.");
+        exit(0);
     }
 
     if (!got_ip || !got_type) {
         std::cout << "Error in config file. Please include both a ip and type for each server." << std::endl;
-        throw std::runtime_error("Failed To Parse Config.");
+        exit(0);
     }
 
     this->servers.push_back(std::move(current_config));
@@ -132,7 +129,8 @@ void ExtractKeyValue(const std::string& line, std::string& key, std::string& val
     size_t pos = line.find('=');
 
     if (pos == std::string::npos) {
-        throw std::runtime_error("Couldn't find equals operator when extracting key value pair.");
+        std::cout << "Couldn't find equals operator when extracting key value pair." << std::endl;
+        exit(0);
     }
 
     key = line.substr(0, pos);
