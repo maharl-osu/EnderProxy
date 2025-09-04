@@ -108,7 +108,7 @@ std::string Config::GetForwardAddress(std::string server_name) {
     }
 
     std::cout << "Error: Couldn't Find Forward Rule For Host \'" << server_name << "\'" << std::endl;
-    return "";
+    return "N/A";
 }
 
 

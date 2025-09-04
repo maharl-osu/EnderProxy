@@ -62,7 +62,7 @@ void TCPConnection::Send(uint8_t* buffer, const ssize_t& len) {
     if (len_written == -1) {
         std::cout << "Failed To Write To TCP Connection" << std::endl;
         Close();
-    } if (len_written != len) {
+    } else if (len_written != len) {
         std::cout << "Failed To Write Entire Packet. Trying To Write Remaining." << std::endl;
         Send(buffer + len_written, len - len_written);
     }
