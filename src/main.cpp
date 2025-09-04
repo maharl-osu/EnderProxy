@@ -6,8 +6,13 @@
 #include <memory>
 #include <thread>
 
+// Error statuses
+std::string INVALID_ROUTE_STATUS = "{\"version\": {\"name\": \"EnderProxy\", \"protocol\": $PROTOCOL}, \"description\": {\"text\": \"EnderProxy | This Route Has Not Been Setup\"}}";
+std::string FORWARD_SERVER_CLOSED = "{\"version\": {\"name\": \"EnderProxy\", \"protocol\": $PROTOCOL}, \"description\": {\"text\": \"EnderProxy | Can't Connect To Forward Server\"}}";
+
 // Prototypes
-void InvalidHostWorker(std::shared_ptr<TCPConnection>, uint32_t);
+void ConnectionErrorWorker(std::shared_ptr<TCPConnection>, std::string);
+void replaceAll(std::string& str, const std::string& from, const std::string& to);
 
 // Main thread and entry point
 int main(int argc, char** argv) {
@@ -53,7 +58,9 @@ int main(int argc, char** argv) {
         if (forward_address == "N/A") {
 
             if (intent == 1) { // Emulate status to provide feedback
-                std::thread t(InvalidHostWorker, connection, protocol);
+                std::string status_str = std::string(INVALID_ROUTE_STATUS);
+                replaceAll(status_str, "$PROTOCOL", std::to_string(protocol));
+                std::thread t(ConnectionErrorWorker, connection, status_str);
                 t.detach();
             } else { // Disconnect, don't care
                 connection->Close();
@@ -62,7 +69,17 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        auto forward_connection = NetworkManager::ConnectTCP(forward_address);
+        std::shared_ptr<TCPConnection> forward_connection;
+        try {
+            forward_connection = NetworkManager::ConnectTCP(forward_address);
+        } catch (std::exception e) {
+            std::string status_str = std::string(FORWARD_SERVER_CLOSED);
+            replaceAll(status_str, "$PROTOCOL", std::to_string(protocol));
+            std::thread t(ConnectionErrorWorker, connection, status_str);
+            t.detach();
+            continue;
+        }
+        
 
         packet.Forward(forward_connection.get());
         
@@ -76,11 +93,11 @@ int main(int argc, char** argv) {
 }
 
 // Implementations
-void InvalidHostWorker(std::shared_ptr<TCPConnection> connection, uint32_t protocol) {
+void ConnectionErrorWorker(std::shared_ptr<TCPConnection> connection, std::string status_string) {
     // TODO: Emulate basic server packets to provide debug information
     // for trying to connect to a invalid host through the proxy.
 
-    std::string status_str = "{\"version\": {\"name\": \"EnderProxy\", \"protocol\":" + std::to_string(protocol) + "}, \"description\": {\"text\": \"EnderProxy | This Route Has Not Been Setup\"}}";
+    
 
     while (connection->Status() == TCPStatus::OPEN) {
         Packet request(connection.get());
@@ -95,7 +112,7 @@ void InvalidHostWorker(std::shared_ptr<TCPConnection> connection, uint32_t proto
         switch (packet_id) {
             case 0x00: // Status Request
                 response.WriteVarInt(0x00); // Packet ID
-                response.WriteString(status_str);
+                response.WriteString(status_string);
                 response.Forward(connection.get());
                 break;
             case 0x01: // Ping Request
@@ -107,4 +124,13 @@ void InvalidHostWorker(std::shared_ptr<TCPConnection> connection, uint32_t proto
     }
     
     connection->Close();
+}
+
+void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+    if (from.empty()) return;
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Move past the replaced text to avoid infinite loops if 'to' contains 'from'
+    }
 }
